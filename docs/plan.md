@@ -1,0 +1,34 @@
+# Project Testing, Branching, and Implementation Plan
+> Last updated 12/16/2025
+
+### Phase 1: Testing
+
+Our goal for this phase is to reach the most optimal and accurate ML model (something in between fast and accurate) to recognize video game sprites and categorize them into a specific structure outlined by our training dataset from [Dungeon Crawl Stone Soup](https://opengameart.org/sites/default/files/Dungeon%20Crawl%20Stone%20Soup%20Full_0.zip).
+
+To accomplish that, we are going to test the following optimizers and different ML model implementations into 4 different branches. The first three branches are the following.
+* `sgd`: Stephen
+* `SGD+Momentum`: Lawson
+* `Adam`: Jose
+
+Since the training data is stationary, we will not be test RMSprop.
+For SGDs, we will test out different learning rates. Adam is excluded, since it has a variable learning rate.
+
+We will split the training data as close to 70/30 for training and testing if possible. We will split within each trained category, making sure there is enough data to train and test on in each category. If there is not, manual judgment and reasoning will be provided later.
+
+Once the first 3 optimizer experiments are completed, they will be merged into the fourth branch, `Batching-normalization`.
+* `Batching-normalization`
+  * `SGD`
+  * `SGD+Momentum`
+  * `Adam`
+
+We will start experimenting with batching normalization. Any other experiments will have their own branch, such as changing batch sizes, activation functions, or regularization.
+
+After experimenting, we will document all comparisons and findings into an `analysis.md`. The first usable model will be put into its own branch `alpha` for refinement and will be branched off of for any experimentation.
+
+The refined trained model will be pushed to `main`.
+
+### Phase 2: Implementing
+We have not reached this phase yet. 
+In this phase, we will use our trained model along with VectorDB to automatically categorize and move a different new unorganized and unlabeled dataset into the same folder structure as before.
+
+**WIP**
