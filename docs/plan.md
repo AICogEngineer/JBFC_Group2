@@ -23,6 +23,11 @@ Once the first 3 optimizer experiments are completed, they will be merged into t
 
 We will start experimenting with batching normalization. Any other experiments will have their own branch, such as changing batch sizes, activation functions, or regularization.
 
+We will need to normalize the data in the range of their RGB values from (0-255) to the continuous range of 0 - 1 using (rgbvalue - 0) / (255 - 0).
+We will also need to add in data augmentation by applying image transformations (flipping, rotating, etc). This will help us create a larger dataset to train off of, since the data we have per category is small.
+
+We may also use Keras Tuner later for hypertuning, and some caching to make the training process faster.
+
 After experimenting, we will document all comparisons and findings into an `analysis.md`. The first usable model will be put into its own branch `alpha` for refinement and will be branched off of for any experimentation.
 
 The refined trained model will be pushed to `main`.
