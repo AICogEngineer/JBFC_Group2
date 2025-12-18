@@ -212,3 +212,7 @@ __marimo__/
 *.h5
 
 /logs/sgd_momentum/2*
+
+.DS_Store
+
+/custom
