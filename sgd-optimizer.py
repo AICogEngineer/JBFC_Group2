@@ -11,12 +11,12 @@ IMG_HEIGHT = 32
 IMG_WIDTH = 32
 BATCH_SIZE = 32
 DATA_DIR = './data/Dungeon Crawl Stone Soup Full/'
-LOG_DIR = "logs/data_inspection/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+LOG_DIR_SAMPLE = "logs/data_inspection/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
 # Data Loading
 print(f"Loading data from: {DATA_DIR}")
-print(f"TensorBoard logs will be saved to: {LOG_DIR}")
+print(f"TensorBoard sample logs will be saved to: {LOG_DIR_SAMPLE}")
 
 if not os.path.exists(DATA_DIR):
     print(f"Data directory not found at {DATA_DIR}")
@@ -49,7 +49,7 @@ else:
     print("writing sample images to TensorBoard...")
     
     # Create a file writer for the log directory
-    file_writer = tf.summary.create_file_writer(LOG_DIR)
+    file_writer = tf.summary.create_file_writer(LOG_DIR_SAMPLE)
 
     # Get a batch of images
     for images, labels in train_ds.take(1):
@@ -58,7 +58,7 @@ else:
         with file_writer.as_default():
             tf.summary.image("Training Data Examples", images, step=0, max_outputs=25)
             
-    print(f"Run: tensorboard --logdir={LOG_DIR}") # I always forget this syntax
+    print(f"Run: tensorboard --logdir={LOG_DIR_SAMPLE}") # I always forget this syntax
 
     # 3. Preprocessing (Normalization)
     normalization_layer = layers.Rescaling(1./255) # scales the pixel values to be between 0 and 1 instead of 0-255
@@ -69,8 +69,34 @@ else:
     print("Data is ready :)")
 
 
-    # TODO: Make model
-    # TODO: Create optimizer
-    # TODO: Compile model
-    # TODO: Train model
+# making the model
 
+num_classes = len(class_names)
+
+sgd_model = keras.Sequential([
+    layers.Conv2D(32, 3, padding='same', activation='relu', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, 3, padding='same', activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Flatten(),
+    layers.Dense(64, activation='relu'),
+    layers.Dense(num_classes, activation='softmax')
+])
+
+# TODO: Compile model
+sgd_model.compile(
+    optimizer = keras.optimizers.SGD(learning_rate=0.01),
+    loss = "sparse_categorical_crossentropy",
+    metrics = ["accuracy"]
+)
+
+LOGS_DIR = "logs/training/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=LOGS_DIR, histogram_freq=1)
+
+# TODO: Train model
+history = sgd_model.fit(
+    train_ds,
+    validation_data = val_ds,
+    epochs = 10,
+    callbacks = [tensorboard_callback]
+)
