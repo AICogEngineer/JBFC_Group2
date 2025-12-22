@@ -5,6 +5,8 @@
 
 Our goal for this phase is to reach the most optimal and accurate ML model (something in between fast and accurate) to recognize video game sprites and categorize them into a specific structure outlined by our training dataset from [Dungeon Crawl Stone Soup](https://opengameart.org/sites/default/files/Dungeon%20Crawl%20Stone%20Soup%20Full_0.zip).
 
+The dataset will first be sorted in the most general and easiest forms to sort. We will then work backwards into making it more specific as the original set.
+
 To accomplish that, we are going to test the following optimizers and different ML model implementations into 4 different branches. The first three branches are the following.
 * `sgd`: Stephen
 * `SGD+Momentum`: Lawson
@@ -24,7 +26,7 @@ Once the first 3 optimizer experiments are completed, they will be merged into t
 We will start experimenting with batching normalization. Any other experiments will have their own branch, such as changing batch sizes, activation functions, or regularization.
 
 We will need to normalize the data in the range of their RGB values from (0-255) to the continuous range of 0 - 1 using (rgbvalue - 0) / (255 - 0).
-We will also need to add in data augmentation by applying image transformations (flipping, rotating, etc). This will help us create a larger dataset to train off of, since the data we have per category is small.
+Since the dataset is highly imbalanced with many classes of varying sizes, we will also need to add in data augmentation by applying image transformations (flipping, rotating, etc). This will help us create a larger dataset to train off of, since the data we have per category is small. We will also try to add class weights as well. 
 
 We may also use Keras Tuner later for hypertuning, and some caching to make the training process faster.
 
