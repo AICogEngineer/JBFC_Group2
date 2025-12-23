@@ -91,15 +91,14 @@ if __name__ == "__main__":
 
     early_stopping = EarlyStopping(
         monitor="val_loss",
-        patience=5,
-        restore_best_weights=True
+        patience=10,
     )
 
     for lr in learning_rates:
         for momentum in momentum_values:
             for epoch in epochs:
                 sgd_momentum_model = build_sgd_momentum_model(lr, momentum)
-                log_dir = f"logs/sgd_momentum/{lr}/{momentum}/{epoch}/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+                log_dir = f"logs/sgd_momentum_new_dataset_test/{lr}/{momentum}/{epoch}/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
                 tensorboard_callback = tf.keras.callbacks.TensorBoard(
                     log_dir=log_dir,
                     histogram_freq=1

@@ -211,7 +211,7 @@ __marimo__/
 *.keras
 *.h5
 
-/logs/sgd_momentum/0*
+/logs/sgd_*
 
 .DS_Store
 
