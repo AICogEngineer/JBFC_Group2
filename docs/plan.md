@@ -1,6 +1,19 @@
 # Project Testing, Branching, and Implementation Plan
 > Last updated 12/16/2025
 
+###Modifying Dungeon Soup
+Before we can go through phase 1 we have to modify the data. The reason being while technically organized is structed in the way that could make training difficult. As such Jose has gone out of his way to modify the folder and create a new version called "Dungeion Crawl Stone Soup Full_v2"
+
+What he did is:
+-Got rid of unique and arefact dir and sorted images to existing folder
+-Create humanoid dir and moved player/base models to it as well as moster image(ie. dwarfs,elfs,halflings,humnas)
+-delete player/trasform folder and moved images to monster
+-create therianthriopes dir(ei. centaur,naga,merfolk,minotaur,siren)
+-create a sub folder for draconian called "draconian_armor"
+-added more creatures to dragons dir(hyra,drake,wyvern,xtahua)
+-delete vault dir from monster and moved to monster dir
+-moved scepter from weapons to staff
+
 ### Phase 1: Testing
 
 Our goal for this phase is to reach the most optimal and accurate ML model (something in between fast and accurate) to recognize video game sprites and categorize them into a specific structure outlined by our training dataset from [Dungeon Crawl Stone Soup](https://opengameart.org/sites/default/files/Dungeon%20Crawl%20Stone%20Soup%20Full_0.zip).
