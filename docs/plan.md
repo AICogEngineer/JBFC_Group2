@@ -1,7 +1,7 @@
 # Project Testing, Branching, and Implementation Plan
 > Last updated 12/16/2025
 
-###Modifying Dungeon Soup
+### Modifying Dungeon Soup
 Before we can go through phase 1 we have to modify the data. The reason being while technically organized is structed in the way that could make training difficult. As such Jose has gone out of his way to modify the folder and create a new version called "Dungeion Crawl Stone Soup Full_v2"
 
 What he did is:
