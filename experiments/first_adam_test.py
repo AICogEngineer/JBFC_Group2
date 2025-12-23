@@ -7,6 +7,7 @@ import os
 import pathlib
 from dotenv import load_dotenv
 import numpy as np
+from PIL import Image
 
 # env_path = os.path.join(os.path.dirname(__file__), '.env')
 # load_dotenv(dotenv_path=env_path)
@@ -17,6 +18,10 @@ if __name__ == "__main__":
     IMG_SIZE = (32,32)
     BATCH_SIZE = 32
 
+    for img_path in DATASET_PATH.rglob("*.png"):
+        img = Image.open(img_path)
+        img = img.convert("RGB")
+        img.save(img_path, icc_profile=None)
     # Load in all paths inside the training set as their own categories
     image_paths = list(DATASET_PATH.rglob("*.png"))
     labels = []
@@ -39,7 +44,8 @@ if __name__ == "__main__":
     # Pre-process and normalize images and attach integer label from path label
     def load_image(filepath, label):
         img = tf.io.read_file(filepath)
-        img = tf.io.decode_png(img, channels=3) 
+        img = tf.io.decode_png(img, channels=3)
+        img = tf.image.convert_image_dtype(img, tf.float32) 
         img = tf.image.resize(img, IMG_SIZE)
         img = tf.cast(img, tf.float32) / 255.0
         label_index = label_lookup(label)
@@ -55,7 +61,7 @@ if __name__ == "__main__":
     val_ds = dataset.skip(train_size).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
 
-def build_adam_model(learning_rate):
+def build_adam_model():
     adam_model = keras.Sequential([
         keras.Input(shape=(32, 32, 3)),
 
@@ -77,16 +83,16 @@ def build_adam_model(learning_rate):
     ])
 
     adam_model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+        optimizer=keras.optimizers.Adam(), #best learning rate so for me is 0.0001
         loss="sparse_categorical_crossentropy",
         metrics=["accuracy"]
     )
 
     return adam_model
 
-adam_model =build_adam_model(learning_rate=0.0001)
+adam_model =build_adam_model()
 
-log_dir= "logs/Adams/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+log_dir= "experiments/logs/Adams/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 early_stopping =EarlyStopping(
     monitor="val_loss",
@@ -98,6 +104,13 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(
     log_dir=log_dir,
     histogram_freq=1
 )
+
+# reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
+#     monitor="val_loss",
+#     factor=0.5,
+#     patience=3,
+#     min_lr=1e-6
+# )
 
 adam_model.fit(
     train_ds,
