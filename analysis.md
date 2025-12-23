@@ -10,19 +10,19 @@ This document summarizes the optimization experiments conducted using SGD on the
 - **Batch Size**: 32
 - **Tested Learning Rates (LR)**: `0.001`, `0.01`, `0.05`
 
-## Findings (58 Classes)
+## Findings (126 Classes)
 
 ### 1. Learning Rate = 0.001 (Underfitting)
 - **Behavior**: Extremely slow convergence.
 - **Result**: Stuck at low accuracy (~12-15%) after many epochs.
-- **Verdict**: **Too slow** for the number of classes....zzzzzz
+- **Verdict**: **Too slow** for the number of classes.
 
 ### 2. Learning Rate = 0.05 (Aggressive)
 - **Behavior**: Fast learning but significant overfitting.
 - **Result**: 
   - Training Accuracy: ~89%
   - Validation Accuracy: ~62.5%
-- **Verdict**: **Overfits.**
+- **Verdict**: **Overfits.** (But ~62.5% on 119 classes is impressive!)
 
 ### 3. Learning Rate = 0.01 (Balanced)
 - **Behavior**: Slower than 0.05 but more stable.
@@ -30,6 +30,6 @@ This document summarizes the optimization experiments conducted using SGD on the
 - **Verdict**: **The best.**
 
 ## Conclusion
-Training on **58 granular classes** is difficult and hard to reach high accuracy like i hoped.
+Training on **126 granular classes** is difficult and hard to reach high accuracy like i hoped.
 - **Learning Rate 0.05** remains the strongest performer for raw accuracy (~62.5%) in this configuration.
 - **Learning Rate 0.01** is the best choice if we want reliability.

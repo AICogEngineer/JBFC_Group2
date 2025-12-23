@@ -42,11 +42,13 @@ random.shuffle(image_paths)
 print(f"Found {len(image_paths)} images.")
 
 # 1.3 Get Labels aka the folder name
-# Example: /.../monster/abyss/crab.png -> Label: 'abyss'
+# The label is the relative path to the folder the image is in.
+# Example: /.../monster/abyss/crab.png -> Label: 'monster/abyss'
 def get_label_from_path(file_path):
     path_object = pathlib.Path(file_path)
-    parent_folder_name = path_object.parent.name
-    return parent_folder_name
+    # Get path relative to the data root
+    relative_path = path_object.parent.relative_to(data_dir)
+    return str(relative_path)
 
 # Create a list of labels matching our list of images
 labels = [get_label_from_path(path) for path in image_paths]
