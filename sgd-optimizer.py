@@ -1,102 +1,168 @@
-import numpy as np
+import os
+# Suppress TensorFlow INFO and WARNING logs -->> those annoying PNG iCCP warnings >:(
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-import os
-import shutil
 import datetime
+import pathlib
+import random
 
-# set constants/variables
+# ==========================================
+# Configuration
+# ==========================================
 IMG_HEIGHT = 32
 IMG_WIDTH = 32
 BATCH_SIZE = 32
-DATA_DIR = './data/Dungeon Crawl Stone Soup Full/'
-LOG_DIR_SAMPLE = "logs/data_inspection/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+DATA_DIR = './data/Dungeon Crawl Stone Soup Full_v2/'
 
-
-# Data Loading
+# ==========================================
+# Step 1: Data Loading
+# ==========================================
+# Use a manual approach here because 'image_dataset_from_directory'
+# doesn't see the deep subfolders (like 'monster/abyss') by default.
 print(f"Loading data from: {DATA_DIR}")
-print(f"TensorBoard sample logs will be saved to: {LOG_DIR_SAMPLE}")
 
 if not os.path.exists(DATA_DIR):
-    print(f"Data directory not found at {DATA_DIR}")
-else:
-    # Training split (70%)
-    train_ds = tf.keras.utils.image_dataset_from_directory( # standard way to load data from a directory and label it by subdirectories
-        DATA_DIR,
-        validation_split=0.3,
-        subset="training",
-        seed=13,
-        image_size=(IMG_HEIGHT, IMG_WIDTH),
-        batch_size=BATCH_SIZE
-    )
+    print(f"Error: Data directory not found at {DATA_DIR}")
+    exit()
 
-    # Validation split (30%)
-    val_ds = tf.keras.utils.image_dataset_from_directory( # standard way to load data from a directory and label it by subdirectories
-        DATA_DIR,
-        validation_split=0.3,
-        subset="validation",
-        seed=13,
-        image_size=(IMG_HEIGHT, IMG_WIDTH),
-        batch_size=BATCH_SIZE
-    )
+# 1.1 Find all image files
+data_dir = pathlib.Path(DATA_DIR)
+# 'rglob' stands for Recursive Glob (searches all subfolders recursively)
+image_paths = list(data_dir.rglob('*.png'))
+image_paths = [str(path) for path in image_paths] # Convert Path objects to strings
 
-    # This is how we find out the class names in our directory, set it to a variable for later use
-    class_names = train_ds.class_names
-    print(f"Found {len(class_names)} classes: {class_names}")
+# 1.2 Shuffle the data
+# Shuffle so the model doesn't learn order (e.g. all monsters, then all items)
+random.seed(13)
+random.shuffle(image_paths)
 
-    # Tensorboard stuff
-    print("writing sample images to TensorBoard...")
-    
-    # Create a file writer for the log directory
-    file_writer = tf.summary.create_file_writer(LOG_DIR_SAMPLE)
+print(f"Found {len(image_paths)} images.")
 
-    # Get a batch of images
-    for images, labels in train_ds.take(1):
-        # takes a single batch of images and labels to view in TensorBoard to ensure the data is loaded correctly
-        
-        with file_writer.as_default():
-            tf.summary.image("Training Data Examples", images, step=0, max_outputs=25)
-            
-    print(f"Run: tensorboard --logdir={LOG_DIR_SAMPLE}") # I always forget this syntax
+# 1.3 Get Labels aka the folder name
+# Example: /.../monster/abyss/crab.png -> Label: 'abyss'
+def get_label_from_path(file_path):
+    path_object = pathlib.Path(file_path)
+    parent_folder_name = path_object.parent.name
+    return parent_folder_name
 
-    # 3. Preprocessing (Normalization)
-    normalization_layer = layers.Rescaling(1./255) # scales the pixel values to be between 0 and 1 instead of 0-255
-    train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y)) # apply the normalization to the training dataset
-    val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y)) # apply the normalization to the validation dataset
+# Create a list of labels matching our list of images
+labels = [get_label_from_path(path) for path in image_paths]
+
+# Find all unique class names (the sorted list of labels)
+class_names = sorted(list(set(labels)))
+print(f"Found {len(class_names)} classes: {class_names}")
+
+# 1.4 Convert name labels to numbers
+label_to_index = {name: i for i, name in enumerate(class_names)}
+all_labels = [label_to_index[lbl] for lbl in labels]
+
+# 1.5 Split Data (70% Train, 30% Validation)
+val_size = int(len(image_paths) * 0.3)
+
+train_paths = image_paths[val_size:]   # Last 70%
+train_labels = all_labels[val_size:]
+
+val_paths = image_paths[:val_size]     # First 30%
+val_labels = all_labels[:val_size]
+
+print(f"Training samples: {len(train_paths)}")
+print(f"Validation samples: {len(val_paths)}")
+
+# 1.6 Helper function to load and fix images
+def load_and_process_image(path, label):
+    # Read the file from disk
+    image = tf.io.read_file(path)
+    # Decode PNG format
+    image = tf.image.decode_png(image, channels=3)
+    # Resize just in case (hidden boss thing might be random dimensions)
+    image = tf.image.resize(image, [IMG_HEIGHT, IMG_WIDTH])
+    # Normalize: Convert pixel values from 0-255 to 0-1
+    image = image / 255.0
+    return image, label
+
+# 1.7 Create TensorFlow Datasets
+# inputs, targets
+train_ds = tf.data.Dataset.from_tensor_slices((train_paths, train_labels))
+train_ds = train_ds.map(load_and_process_image, num_parallel_calls=tf.data.AUTOTUNE)
+train_ds = train_ds.batch(BATCH_SIZE)
+train_ds = train_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+
+val_ds = tf.data.Dataset.from_tensor_slices((val_paths, val_labels))
+val_ds = val_ds.map(load_and_process_image, num_parallel_calls=tf.data.AUTOTUNE)
+val_ds = val_ds.batch(BATCH_SIZE)
+val_ds = val_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+
+print("Data is ready :)")
 
 
-    print("Data is ready :)")
-
-
-# making the model
-
+# ==========================================
+# Step 2: Model Architecture
+# ==========================================
 num_classes = len(class_names)
 
-sgd_model = keras.Sequential([
-    layers.Conv2D(32, 3, padding='same', activation='relu', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
-    layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D((2, 2)),
-    layers.Flatten(),
-    layers.Dense(64, activation='relu'),
-    layers.Dense(num_classes, activation='softmax')
-])
+def create_model():
+    model = keras.Sequential([
+        # Input Layer: 32 filters, looks for small patterns (edges, corners)
+        layers.Conv2D(32, 3, padding='same', activation='relu', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
+        layers.MaxPooling2D((2, 2)), # Shrinks the image size
+        
+        # Second Layer: 64 filters, looks for shapes and patterns
+        layers.Conv2D(64, 3, padding='same', activation='relu'),
+        layers.MaxPooling2D((2, 2)),
+        
+        # Flatten: Turn the 2D grid into 1D
+        layers.Flatten(),
+        
+        # Hidden Layer: 128 neurons
+        layers.Dense(128, activation='relu'),
+        
+        # Output Layer: softmax for classification
+        layers.Dense(num_classes, activation='softmax')
+    ])
+    return model
 
-# TODO: Compile model
-sgd_model.compile(
-    optimizer = keras.optimizers.SGD(learning_rate=0.01),
-    loss = "sparse_categorical_crossentropy",
-    metrics = ["accuracy"]
-)
+# ==========================================
+# Step 3: Training Loop
+# ==========================================
+learning_rates = [0.01, 0.001, 0.05]
 
-LOGS_DIR = "logs/training/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=LOGS_DIR, histogram_freq=1)
+print("\nStarting Training Experiment...")
+for lr in learning_rates:
+    print(f"\n--- Training with Learning Rate: {lr} ---")
+    
+    # Initialize Model
+    sgd_model = create_model()
 
-# TODO: Train model
-history = sgd_model.fit(
-    train_ds,
-    validation_data = val_ds,
-    epochs = 10,
-    callbacks = [tensorboard_callback]
-)
+    # Configure Optimizer (SGD)
+    sgd_model.compile(
+        optimizer = keras.optimizers.SGD(learning_rate=lr),
+        loss = "sparse_categorical_crossentropy", # Standard for integer labels
+        metrics = ["accuracy"]
+    )
+
+    # Setup Logs and Callbacks
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    LOGS_DIR = f"logs/training/sgd_lr_{lr}_{current_time}"
+    
+    # TensorBoard: Visualizes the training graphs
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=LOGS_DIR, histogram_freq=1)
+    
+    # Early Stopping: Stops training if it's not getting better
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor='val_loss',
+        patience=5,
+        restore_best_weights=True
+    )
+
+    # Run Training
+    history = sgd_model.fit(
+        train_ds,
+        validation_data = val_ds,
+        epochs = 35,
+        callbacks = [tensorboard_callback, early_stopping]
+    )
+    
+    print(f"Completed LR {lr}. Logs saved to {LOGS_DIR}")
