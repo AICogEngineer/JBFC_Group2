@@ -22,7 +22,7 @@ This document summarizes the optimization experiments conducted using SGD on the
 - **Result**: 
   - Training Accuracy: ~89%
   - Validation Accuracy: ~62.5%
-- **Verdict**: **Overfits.** (But ~62.5% on 119 classes is impressive!)
+- **Verdict**: **Overfits.**
 
 ### 3. Learning Rate = 0.01 (Balanced)
 - **Behavior**: Slower than 0.05 but more stable.
