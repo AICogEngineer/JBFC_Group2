@@ -163,7 +163,7 @@ for lr in learning_rates:
     history = sgd_model.fit(
         train_ds,
         validation_data = val_ds,
-        epochs = 35,
+        epochs = 50,
         callbacks = [tensorboard_callback, early_stopping]
     )
     
