@@ -114,6 +114,11 @@ def create_model():
         # Second Layer: 64 filters, looks for shapes and patterns
         layers.Conv2D(64, 3, padding='same', activation='relu'),
         layers.MaxPooling2D((2, 2)),
+
+        # Third Layer: 128 filters, looks for complex patterns
+        layers.Conv2D(128, 3, padding='same', activation='relu'),
+        layers.BatchNormalization(),
+        layers.MaxPooling2D((2, 2)),
         
         # Flatten: Turn the 2D grid into 1D
         layers.Flatten(),
