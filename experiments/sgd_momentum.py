@@ -2,16 +2,23 @@ import os
 import numpy as np
 import keras
 from keras import layers
+from keras.callbacks import EarlyStopping
 import tensorflow as tf
 import datetime
 import pathlib
 from dotenv import load_dotenv
+from PIL import Image
 
 if __name__ == "__main__":
     load_dotenv()
     DATASET_PATH = pathlib.Path(os.getenv("DATASET_PATH"))
     IMG_SIZE = (32,32)
     BATCH_SIZE = 32
+
+    for img_path in DATASET_PATH.rglob("*.png"):
+        img = Image.open(img_path)
+        img = img.convert("RGB")
+        img.save(img_path, icc_profile=None)
 
     # Load in all paths inside the training set as their own categories
     image_paths = list(DATASET_PATH.rglob("*.png"))
@@ -79,8 +86,14 @@ if __name__ == "__main__":
         return sgd_momentum_model
     
     learning_rates = [0.001, 0.01, 0.1]
-    momentum_values = [0.1, 0.5, 0.9, 0.99]
-    epochs = [15, 30, 50]
+    momentum_values = [0.1, 0.5, 0.9]
+    epochs = [50]
+
+    early_stopping = EarlyStopping(
+        monitor="val_loss",
+        patience=5,
+        restore_best_weights=True
+    )
 
     for lr in learning_rates:
         for momentum in momentum_values:
@@ -95,7 +108,7 @@ if __name__ == "__main__":
                     train_ds,
                     validation_data=val_ds,
                     epochs=epoch,
-                    callbacks=[tensorboard_callback]
+                    callbacks=[tensorboard_callback, early_stopping]
                 )
 
     print("Finished")
