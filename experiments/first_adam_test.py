@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     dataset = tf.data.Dataset.from_tensor_slices((image_paths, labels))
     dataset = dataset.map(load_image, num_parallel_calls=tf.data.AUTOTUNE)
-    dataset = dataset.shuffle(buffer_size=len(image_paths), seed=42)
+    dataset = dataset.shuffle(buffer_size=len(image_paths), seed=42,reshuffle_each_iteration=False)# don't want val and test to get mixed
 
     dataset_batches = len(dataset)
     train_size = int(0.8 * dataset_batches)
@@ -105,16 +105,16 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(
     histogram_freq=1
 )
 
-# reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
-#     monitor="val_loss",
-#     factor=0.5,
-#     patience=3,
-#     min_lr=1e-6
-# )
+reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor="val_loss",
+    factor=0.5,
+    patience=3,
+    min_lr=1e-6
+)
 
 adam_model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=50,
-    callbacks=[tensorboard_callback, early_stopping]
+    callbacks=[tensorboard_callback, early_stopping,reduce_lr]
 )
