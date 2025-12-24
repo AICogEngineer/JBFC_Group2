@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     dataset = tf.data.Dataset.from_tensor_slices((image_paths, labels))
     dataset = dataset.map(load_image, num_parallel_calls=tf.data.AUTOTUNE)
-    dataset = dataset.shuffle(buffer_size=len(image_paths), seed=42)
+    dataset = dataset.shuffle(buffer_size=len(image_paths), seed=42, reshuffle_each_iteration=False)
 
     dataset_batches = len(dataset)
     train_size = int(0.8 * dataset_batches)
