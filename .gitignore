@@ -211,8 +211,11 @@ __marimo__/
 *.keras
 *.h5
 
-/logs/sgd_*
+/logs/test/*
 
 .DS_Store
 
 /custom
+
+*.zip
+/extract
