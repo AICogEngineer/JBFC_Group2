@@ -15,6 +15,7 @@ import random
 IMG_HEIGHT = 32
 IMG_WIDTH = 32
 BATCH_SIZE = 32
+EMBEDDING_DIM = 128
 DATA_DIR = './data/Dungeon Crawl Stone Soup Full_v2/'
 
 # ==========================================
@@ -125,6 +126,9 @@ def create_model():
         
         # Hidden Layer: 128 neurons
         layers.Dense(128, activation='relu'),
+
+        # Embedding layer for similiarity search
+        layers.Dense(EMBEDDING_DIM, activation=None, name="embedding"),
         
         # Output Layer: softmax for classification
         layers.Dense(num_classes, activation='softmax')
@@ -173,3 +177,9 @@ for lr in learning_rates:
     )
     
     print(f"Completed LR {lr}. Logs saved to {LOGS_DIR}")
+    
+    # Save the model for ChromaDB integration
+    if lr == 0.01: # Save the one with 0.01 LR as our 'production' model
+        model_save_path = "./models/dungeon_model.keras"
+        sgd_model.save(model_save_path)
+        print(f"Model saved to {model_save_path}")
