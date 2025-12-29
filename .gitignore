@@ -220,3 +220,7 @@ __marimo__/
 *.zip
 /extract
 /chaos_data
+Dungeon Crawl Stone Soup Full
+Dungeon Crawl Stone Soup Full_v2
+experiments/logs/Adams/20*
+.vscode
