@@ -102,10 +102,9 @@ def data_augment(images):
     data_augmentation_layers = [
         layers.RandomFlip("horizontal"),
         layers.RandomContrast(0.05),
-        layers.RandomTranslation(height_factor=0.05, width_factor=0.05),
+        layers.RandomTranslation(height_factor=0.1, width_factor=0.1),
         layers.RandomBrightness(0.05),
-        layers.RandomZoom(0.05),
-        layers.RandomRotation(0.02)
+        layers.RandomZoom(0.05)
     ]
 
     for layer in data_augmentation_layers:
@@ -143,29 +142,12 @@ def build_model(num_classes):
     x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.SpatialDropout2D(0.2)(x)
 
-    x = layers.Conv2D(512, (1, 1), padding="same", activation="relu")(x)
+    #x = layers.GlobalAveragePooling2D()(x)
+    x = layers.Flatten()(x)
 
-    gap = layers.GlobalAveragePooling2D()(x)
-    gmp = layers.GlobalMaxPooling2D()(x)
-    x = layers.Concatenate()([gap, gmp])
-
-    x = layers.Dense(
-        1024, 
-        kernel_initializer="he_normal", 
-        kernel_regularizer=keras.regularizers.l2(0.001),
-        kernel_constraint=keras.constraints.MaxNorm(3)
-    )(x)
+    x = layers.Dense(512, kernel_initializer="he_normal", kernel_regularizer=keras.regularizers.l2(0.0005))(x)
     x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.Dropout(0.5)(x) 
-
-    x = layers.Dense(
-        512, 
-        kernel_initializer="he_normal", 
-        kernel_regularizer=keras.regularizers.l2(0.001),
-        kernel_constraint=keras.constraints.MaxNorm(3)
-    )(x)
-    x = layers.LeakyReLU(negative_slope=0.1)(x)
-    x = layers.Dropout(0.3)(x)
 
     outputs = layers.Dense(num_classes, activation="softmax")(x)
     
@@ -195,8 +177,7 @@ if __name__ == "__main__":
         seed=42,
         image_size=(32,32),
         batch_size=BATCH_SIZE,
-        color_mode="rgba",
-        label_mode="categorical"
+        color_mode="rgba"
     )
 
     class_names = train_ds.class_names
@@ -204,8 +185,8 @@ if __name__ == "__main__":
 
     model = build_model(num_classes)
     model.compile(
-        optimizer=keras.optimizers.AdamW(learning_rate=1e-3, weight_decay=1e-4),
-        loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
+        optimizer="adam",
+        loss="sparse_categorical_crossentropy",
         metrics=["accuracy"]
     )
 
@@ -215,16 +196,16 @@ if __name__ == "__main__":
             monitor="val_loss", 
             factor=0.2, 
             patience=3, 
-            min_lr=1e-7
+            min_lr=1e-6
         ),
         keras.callbacks.EarlyStopping(
             monitor="val_loss",
-            patience=15, # Stop if no improvement for 15 epochs
+            patience=10, # Stop if no improvement for 15 epochs
             restore_best_weights=True
         )
     ]
 
-    y_train = np.concatenate([np.argmax(y, axis=1) for x, y in train_ds], axis=0)
+    y_train = np.concatenate([y for x, y in train_ds], axis=0)
     weights = class_weight.compute_class_weight(
         class_weight='balanced',
         classes=np.unique(y_train),
