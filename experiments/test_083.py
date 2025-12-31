@@ -222,7 +222,15 @@ if __name__ == "__main__":
         callbacks=callbacks
     )
 
-    print(f"Done training.")
+    MODEL_DIR = "./models/"
+    MODEL_NAME = "dungeon_model.keras"
+
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    model.save(os.path.join(MODEL_DIR, MODEL_NAME))
+
+    print(f"Training complete and Model saved to {os.path.join(MODEL_DIR, MODEL_NAME)}")
+
+
 
 
     
