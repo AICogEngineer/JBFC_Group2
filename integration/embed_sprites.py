@@ -5,6 +5,7 @@ import numpy as np
 from dotenv import load_dotenv
 import tensorflow as tf
 import pathlib
+from numpy.linalg import norm
 
 # Config
 load_dotenv()
@@ -13,7 +14,7 @@ CHROMA_BATCH_SIZE = 512
 MODEL_PATH = './models/dungeon_model.keras'    # WHEREVER YOUR MODEL IS KEPT
 DATASET_PATH = os.getenv("DATASET_PATH") # Path to dataset root directory
 CHROMA_COLLECTION_NAME = 'sprite_embeddings'
-
+CHROMA_DB_PATH = './chroma_db'
 
 # Load model
 
@@ -23,11 +24,15 @@ model, embedding_model = load_model(MODEL_PATH)
 image_paths = load_image_paths(DATASET_PATH)
 print(f"Found {len(image_paths)} images for embedding.") # sanity check
 
+# Normalize function
+def normalize_vec(vec):
+    return vec / norm(vec)
+
 # Generate embeddings
 def load_and_process_image(path):         # Same as model training
     image = tf.io.read_file(path)
     image = tf.image.decode_png(image, channels=4)
-    image = tf.image.resize(image, [32, ])
+    image = tf.image.resize(image, [32, 32])
     image = image / 255.0
     return image
 
@@ -58,6 +63,9 @@ for start_idx in range(0, num_embeddings, CHROMA_BATCH_SIZE):
     batch_embeddings = embeddings[start_idx:end_idx]
     batch_labels = labels[start_idx:end_idx]
     batch_paths = image_paths[start_idx:end_idx]
+
+    # Normalize vectors 
+    batch_embeddings =  np.array([normalize_vec(v) for v in batch_embeddings])
 
     collection.add(
         embeddings=batch_embeddings.tolist(),
