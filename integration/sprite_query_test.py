@@ -3,12 +3,16 @@ import os
 from PIL import Image
 import matplotlib.pyplot as plt
 from sprite_utils import load_model, get_embedding_from_file, load_image_paths, get_chroma_collection
+from dotenv import load_dotenv
+
 
 # Config
 MODEL_PATH = './models/dungeon_model.keras'
 DATASET_PATH = os.getenv("DATASET_PATH") # Path to dataset root directory
 CHROMA_COLLECTION_NAME = 'sprite_embeddings'
 CHROMA_DB_PATH = './chroma_db'
+load_dotenv()
+DATASET_PATH = os.getenv("DATASET_PATH") # Path to dataset root directory
 
 # Load model
 model, embedding_model = load_model(MODEL_PATH)
@@ -40,4 +44,4 @@ for i, res in enumerate(results['metadatas'][0]):
     axes[i+1].set_title(res['label'])
     axes[i+1].axis('off')
 
-plt.show()
+plt.savefig("/home/jurdy/Dev/ai-training/project-4/JBFC_Group2/integration/query_results.png")
