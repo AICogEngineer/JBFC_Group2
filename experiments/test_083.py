@@ -149,7 +149,9 @@ def build_model(num_classes):
     x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.Dropout(0.5)(x) 
 
-    outputs = layers.Dense(num_classes, activation="softmax")(x)
+    # Embedding layer for similarity search
+    embedding = layers.Dense(128, activation=None, name="embedding")(x)
+    outputs = layers.Dense(num_classes, activation="softmax")(embedding)
     
     model = keras.Model(
         inputs = inputs,

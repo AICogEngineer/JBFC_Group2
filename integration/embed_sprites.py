@@ -1,50 +1,33 @@
 # Generate and store embeddings in ChromaDB
-
+from sprite_utils import load_model, get_embedding_from_file, load_image_paths, get_chroma_collection
 import os
-import pathlib
-import random 
-import tensorflow as tf
-import chromadb
-from chromadb.config import Settings
 import numpy as np
 from dotenv import load_dotenv
+import tensorflow as tf
+import pathlib
 
-# Config has to match training model-----------------------
-IMG_HEIGHT = 32
-IMG_WIDTH = 32
+# Config
+load_dotenv()
 BATCH_SIZE = 32
+CHROMA_BATCH_SIZE = 512
 MODEL_PATH = './models/dungeon_model.keras'    # WHEREVER YOUR MODEL IS KEPT
+DATASET_PATH = os.getenv("DATASET_PATH") # Path to dataset root directory
 CHROMA_COLLECTION_NAME = 'sprite_embeddings'
 
-load_dotenv()
-DATASET_PATH = os.getenv("DATASET_PATH") # Path to dataset root directory
 
-# ----------------------------------------------------------
+# Load model
 
-model = tf.keras.models.load_model(MODEL_PATH)   # WHEREVER YOUR MODEL IS KEPT
+model, embedding_model = load_model(MODEL_PATH)
 
-embedding_model = tf.keras.Model(
-    inputs=model.inputs,
-    outputs=model.get_layer("embedding").output
-)
-
-data_dir = pathlib.Path(DATASET_PATH)
-image_paths = list(data_dir.rglob('*.png'))
-image_paths = [str(p) for p in image_paths]
-
+# Load dataset
+image_paths = load_image_paths(DATASET_PATH)
 print(f"Found {len(image_paths)} images for embedding.") # sanity check
 
-def get_label_from_path(file_path):       # Same as model training
-    path_object = pathlib.Path(file_path)
-    relative_path = path_object.parent.relative_to(data_dir)
-    return str(relative_path)
-
-labels = [get_label_from_path(p) for p in image_paths]
-
+# Generate embeddings
 def load_and_process_image(path):         # Same as model training
     image = tf.io.read_file(path)
-    image = tf.image.decode_png(image, channels=3)
-    image = tf.image.resize(image, [IMG_HEIGHT, IMG_WIDTH])
+    image = tf.image.decode_png(image, channels=4)
+    image = tf.image.resize(image, [32, ])
     image = image / 255.0
     return image
 
@@ -56,18 +39,19 @@ dataset = dataset.prefetch(tf.data.AUTOTUNE)
 embeddings = embedding_model.predict(dataset)
 print("Embedding shape is ", embeddings.shape) # Sanity check, correct shape
 
+# Chromadb
+collection = get_chroma_collection(CHROMA_DB_PATH, CHROMA_COLLECTION_NAME)
 
-# initialize chromadb
-client = chromadb.PersistentClient("./chroma_db")   # saves to chroma_db directory
+data_dir = pathlib.Path(DATASET_PATH)
+def get_label_from_path(file_path):       # Same as model training
+    path_object = pathlib.Path(file_path)
+    relative_path = path_object.parent.relative_to(data_dir)
+    return str(relative_path)
 
-collection = client.get_or_create_collection(
-    name=CHROMA_COLLECTION_NAME    # "sprite_embeddings"
-)
-
-CHROMA_BATCH_SIZE = 512 # "Safe standard" size chunks for chroma batching
-num_embeddings = len(embeddings) # 6024
+labels = [get_label_from_path(p) for p in image_paths]
 
 # Using a for loop to batch load into chroma db to avoid the max batch size of like 5,000.
+num_embeddings = len(embeddings)
 for start_idx in range(0, num_embeddings, CHROMA_BATCH_SIZE):
     end_idx = start_idx + CHROMA_BATCH_SIZE
 
