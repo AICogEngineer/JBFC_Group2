@@ -3,6 +3,8 @@ import pathlib
 import tensorflow as tf
 from chromadb import PersistentClient
 import numpy as np
+from chromadb.utils import embedding_functions
+from PIL import Image
 
 # Config
 IMG_HEIGHT = 32
@@ -19,12 +21,11 @@ def load_model(model_path):
 
 #Return flattened embedding vector for a single image
 def get_embedding_from_file(path, embedding_model):
-    img = tf.io.read_file(path)
-    img = tf.image.decode_png(img, channels=4)
-    img = tf.image.resize(img, [IMG_HEIGHT, IMG_WIDTH])
-    img = img / 255.0
+    img = Image.open(path).convert("RGB")
+    img = img.resize((IMG_HEIGHT, IMG_WIDTH))
+    img = np.array(img)
     img = tf.expand_dims(img, axis=0)
-    embedding = embedding_model(img)
+    embedding = embedding_model(img, training=False)
     return embedding.numpy().flatten()
 
 def load_image_paths(dataset_path):
@@ -33,4 +34,4 @@ def load_image_paths(dataset_path):
 
 def get_chroma_collection(db_path, collection_name):
     client = PersistentClient(db_path)
-    return client.get_or_create_collection(collection_name)
+    return client.get_or_create_collection(name=collection_name, embedding_function=embedding_functions.DefaultEmbeddingFunction(), metadata={"distance_metric": "cosine"})

@@ -91,7 +91,7 @@ def clean_images(DATASET_PATH):
 
     for img_path in DATASET_PATH.rglob("*.png"):
         img = Image.open(img_path)
-        img = img.convert("RGBA")
+        img = img.convert("RGB")
         img.save(img_path, icc_profile=None)
 
 def data_augment(images):
@@ -115,7 +115,7 @@ def build_model(num_classes):
     """
     """
 
-    inputs = keras.Input(shape=(32, 32, 4))
+    inputs = keras.Input(shape=(32, 32, 3))
     x = data_augment(inputs)
     x = layers.Rescaling(1./255)(x)
 
@@ -142,8 +142,8 @@ def build_model(num_classes):
     x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.SpatialDropout2D(0.2)(x)
 
-    #x = layers.GlobalAveragePooling2D()(x)
-    x = layers.Flatten()(x)
+    x = layers.GlobalAveragePooling2D()(x)
+    #x = layers.Flatten()(x)
 
     x = layers.Dense(512, kernel_initializer="he_normal", kernel_regularizer=keras.regularizers.l2(0.0005))(x)
     x = layers.LeakyReLU(negative_slope=0.1)(x)
@@ -179,12 +179,13 @@ if __name__ == "__main__":
         seed=42,
         image_size=(32,32),
         batch_size=BATCH_SIZE,
-        color_mode="rgba"
+        color_mode="rgb",
+        labels="inferred", #uses folder names
+        label_mode="int"  # integer labels
     )
 
     class_names = train_ds.class_names
     num_classes = len(class_names)
-
     model = build_model(num_classes)
     model.compile(
         optimizer="adam",
@@ -231,23 +232,3 @@ if __name__ == "__main__":
     model.save(os.path.join(MODEL_DIR, MODEL_NAME))
 
     print(f"Training complete and Model saved to {os.path.join(MODEL_DIR, MODEL_NAME)}")
-
-
-
-
-    
-
-
-
-    
-
-
-
-
-
-
-
-    
-    
-
-
