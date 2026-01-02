@@ -1,4 +1,5 @@
 from sprite_utils import load_model, get_chroma_collection, load_image_paths
+from chromadb import PersistentClient
 import os, pathlib
 import numpy as np
 import tensorflow as tf
@@ -46,17 +47,16 @@ if __name__ == "__main__":
     embeddings = embedding_model.predict(dataset)
     print("Embedding shape:", embeddings.shape)
 
-    collection = get_chroma_collection(CHROMA_DB_PATH, CHROMA_COLLECTION_NAME)
-    
-    # Clear existing data
-    print("Clearing existing collection...")
+    # Reset collection to ensure metadata update (wipes out cosine collection cleanly)
+    print("Resetting collection...")
+    client = PersistentClient(path=CHROMA_DB_PATH)
     try:
-        existing_ids = collection.get()['ids']
-        if existing_ids:
-            collection.delete(existing_ids)
-            print(f"Deleted {len(existing_ids)} existing items.")
-    except Exception as e:
-        print(f"Error clearing collection: {e}")
+        client.delete_collection(CHROMA_COLLECTION_NAME)
+        print(f"Deleted collection '{CHROMA_COLLECTION_NAME}'")
+    except ValueError:
+        print(f"Collection '{CHROMA_COLLECTION_NAME}' did not exist.")
+
+    collection = get_chroma_collection(CHROMA_DB_PATH, CHROMA_COLLECTION_NAME)
 
     labels = [get_label_from_path(p) for p in image_paths]
 

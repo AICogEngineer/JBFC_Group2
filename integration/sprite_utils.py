@@ -34,4 +34,4 @@ def load_image_paths(dataset_path):
 
 def get_chroma_collection(db_path, collection_name):
     client = PersistentClient(db_path)
-    return client.get_or_create_collection(name=collection_name, embedding_function=embedding_functions.DefaultEmbeddingFunction(), metadata={"distance_metric": "cosine"})
+    return client.get_or_create_collection(name=collection_name, embedding_function=embedding_functions.DefaultEmbeddingFunction(), metadata={"hnsw:space": "l2"})

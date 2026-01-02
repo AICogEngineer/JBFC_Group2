@@ -19,7 +19,7 @@ MODEL_PATH = "./models/dungeon_model.keras"
 CHROMA_DB_PATH = "./chroma_db"
 CHROMA_COLLECTION_NAME = "sprite_embeddings"
 TEST_DATASET_PATH = os.getenv("TEST_IMAGE_PATH")
-TEST_SPRITE_PATH = os.path.join(TEST_DATASET_PATH, "img_25.png")
+TEST_SPRITE_PATH = os.path.join(TEST_DATASET_PATH, "img_372.png")
 
 TOP_K_CLASSES = 9
 TOP_K_NEIGHBORS = 5
