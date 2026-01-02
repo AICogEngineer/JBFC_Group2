@@ -220,3 +220,7 @@ Dungeon Crawl Stone Soup Full
 Dungeon Crawl Stone Soup Full_v2
 experiments/logs/Adams/20*
 .vscode
+
+models/
+*.keras
+chroma_db/
