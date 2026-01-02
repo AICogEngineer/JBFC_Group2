@@ -1,10 +1,5 @@
 from sprite_utils import load_model, get_chroma_collection, load_image_paths
-<<<<<<< Updated upstream
 from chromadb import PersistentClient
-=======
-
-
->>>>>>> Stashed changes
 import os, pathlib
 import numpy as np
 import tensorflow as tf
