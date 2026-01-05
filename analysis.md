@@ -21,9 +21,11 @@ To put in RGB Dataset B, we took only the sprites with no background added, and 
 
 The extra alpha channel gives us more information on the art's shape and distinguishes it away from any floor or wall tile better. 
 
-
-
 Using the original modified dataset A, we achieved a 83% accuracy with 0.6 loss with 40 categories. Using our A+B same category dataset, we achieved 80% with 0.8 loss. With the new A+B 41 category dataset, we achieved the same 80% with 0.8 loss.
 
 Note that by using class weights, validation loss will always be higher by a certain amount.
+
+Using a separate 128 embedding compared to a 512 embedding layer has more accurate first top-k, but 512 has the more accurate neighbors in general.
+
+Using normalized cosine vs non-normalized L2. Normalized cosine provided better results overall than non-normalized L2.
 

@@ -6,17 +6,15 @@ import tensorflow as tf
 import datetime
 from project_utils import train_utils
 
-# TODO: Test to see if adding a 128 layer to get the embeddings improves ChromaDB query performance
-
 if __name__ == "__main__":
 
     # Training Variables to change
-    DATASET_PATH = "data/training_data"
+    DATASET_PATH = "datasets/test_ab_og"
     BATCH_SIZE = 32
-    LOG_DIR = f"logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    LOG_DIR = f"logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "-ab-og-128"
     EPOCHS = 100
-    MODEL_DIR = "output/models/"
-    MODEL_NAME = "dungeon_model.keras"
+    MODEL_DIR = "output/models_present/"
+    MODEL_NAME = "dungeon_model_ab_og_present.keras"
 
     train_utils.clean_images(DATASET_PATH)
 

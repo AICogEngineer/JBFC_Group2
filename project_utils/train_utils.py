@@ -65,10 +65,11 @@ def build_model(num_classes):
     x = layers.Flatten()(x)
 
     x = layers.Dense(512, kernel_initializer="he_normal", kernel_regularizer=keras.regularizers.l2(0.0005))(x)
-    x = layers.LeakyReLU(negative_slope=0.1, name="embeddings")(x)
+    x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.Dropout(0.5)(x) 
 
-    outputs = layers.Dense(num_classes, activation="softmax")(x)
+    embeddings = layers.Dense(128, activation=None, name="embeddings")(x)
+    outputs = layers.Dense(num_classes, activation="softmax")(embeddings)
     
     model = keras.Model(
         inputs = inputs,

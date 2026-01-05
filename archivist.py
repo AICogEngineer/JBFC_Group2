@@ -5,13 +5,13 @@ import shutil
 from collections import Counter
 
 # Archivist Variables
-MODEL_PATH = "output/models/dungeon_model_ab.keras"
-TRAINED_DATASET_PATH = "datasets/test_ab"
+MODEL_PATH = "output/models_128/dungeon_model_ab_og.keras"
+TRAINED_DATASET_PATH = "datasets/test_ab_og"
 SORT_DATASET_PATH = "datasets/dataset_c-main"
 CHROMA_COLLECTION_NAME = "sprite_embeddings"
 CHROMA_DB_PATH = "./chroma_db"
 DISTANCE_THRESHOLD = 0.8
-OUTPUT_DIR = "output/model_sorted_dataset"
+OUTPUT_DIR = "output/model_sorted_dataset_ab_og_128"
 
 
 if __name__ == "__main__":
