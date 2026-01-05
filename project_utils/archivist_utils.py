@@ -1,44 +1,69 @@
-from sprite_utils import load_model, get_chroma_collection, load_image_paths
-import os, pathlib
+import os
+import pathlib
 import numpy as np
 import tensorflow as tf
-from dotenv import load_dotenv
 from numpy.linalg import norm
 from PIL import Image
+from chromadb import PersistentClient
+import numpy as np
+from chromadb.utils import embedding_functions
+from PIL import Image
 
-load_dotenv()
-
+# Config
 BATCH_SIZE = 32
 CHROMA_BATCH_SIZE = 512
-MODEL_PATH = './models/dungeon_model.keras'
-DATASET_PATH = os.getenv("DATASET_PATH")
 CHROMA_COLLECTION_NAME = 'sprite_embeddings'
-CHROMA_DB_PATH = './chroma_db'
+CHROMA_DB_PATH = 'chroma_db'
 
-model, embedding_model = load_model(MODEL_PATH)
-image_paths = load_image_paths(DATASET_PATH)
-print(f"Found {len(image_paths)} images.")
+# Load CNN and embedding layer
+def load_model(model_path):
+    model = tf.keras.models.load_model(model_path)
+    embedding_model = tf.keras.Model(
+        inputs=model.inputs,
+        outputs=model.get_layer("embeddings").output
+    )
+    return model, embedding_model
+
+#Return flattened embedding vector for a single image
+def get_embedding_from_file(path, embedding_model):
+    img = Image.open(path).convert("RGBA")
+    img = img.resize((32, 32))
+    img = np.array(img)
+    img = tf.expand_dims(img, axis=0)
+    embedding = embedding_model(img, training=False)
+    return embedding.numpy().flatten()
+
+def load_image_paths(dataset_path):
+    data_dir = pathlib.Path(dataset_path)
+    return [str(p) for p in data_dir.rglob('*.png')]
+
+def get_chroma_collection(db_path, collection_name):
+    client = PersistentClient(db_path)
+    return client.get_or_create_collection(name=collection_name, embedding_function=embedding_functions.DefaultEmbeddingFunction(), metadata={"distance_metric": "cosine"})
 
 def normalize_vec(vec):
     return vec / norm(vec)
 
-data_dir = pathlib.Path(DATASET_PATH)
-
-def get_label_from_path(file_path):
+def get_label_from_path(file_path, data_dir):
     path_object = pathlib.Path(file_path)
     return str(path_object.parent.relative_to(data_dir))
 
 def load_and_process_image(path):
     def _process(p):
-        img = Image.open(p.numpy().decode("utf-8")).convert("RGB")
+        img = Image.open(p.numpy().decode("utf-8")).convert("RGBA")
         img = img.resize((32, 32))
         return np.array(img, dtype=np.float32)
 
     image = tf.py_function(_process, [path], tf.float32)
-    image.set_shape([32, 32, 3])
+    image.set_shape([32, 32, 4])
     return image
 
-if __name__ == "__main__":
+def load_sprite_embeddings_into_chromadb(model_path, dataset_path):
+    model, embedding_model = load_model(model_path)
+    image_paths = load_image_paths(dataset_path)
+    print(f"Found {len(image_paths)} images.")
+
+    data_dir = pathlib.Path(dataset_path)
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
     dataset = dataset.map(load_and_process_image, num_parallel_calls=tf.data.AUTOTUNE)
     dataset = dataset.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
@@ -58,7 +83,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error clearing collection: {e}")
 
-    labels = [get_label_from_path(p) for p in image_paths]
+    labels = [get_label_from_path(p, data_dir) for p in image_paths]
 
     # Batch insert into ChromaDB
     num_embeddings = len(embeddings)

@@ -9,7 +9,7 @@ from embed_sprites import normalize_vec
 from pathlib import Path
 
 # Config
-MODEL_PATH = './models/dungeon_model.keras'
+MODEL_PATH = './models/dungeon_model_ab_og.keras'
 DATASET_PATH = os.getenv("DATASET_PATH") # Path to dataset root directory
 CHROMA_COLLECTION_NAME = 'sprite_embeddings'
 CHROMA_DB_PATH = './chroma_db'

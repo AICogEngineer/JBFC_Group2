@@ -7,9 +7,9 @@ import sys
 
 # --- CONFIGURATION ---
 load_dotenv()
-SOURCE_DIR = "./dataset_c-main"           
+SOURCE_DIR = "training_data/dataset_c-main"           
 PIPELINE_SCRIPT = "./integration/test_single_sprite_pipline.py" 
-OUTPUT_DIR = "dataset_c_organized" 
+OUTPUT_DIR = "output/dataset_c_organized_ab_original"
 
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)

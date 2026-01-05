@@ -6,3 +6,4 @@ pathlib
 keras
 scikit-learn
 chromadb
+rembg

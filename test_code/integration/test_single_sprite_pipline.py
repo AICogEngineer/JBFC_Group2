@@ -16,7 +16,7 @@ from PIL import Image
 load_dotenv()
 DATASET_PATH = os.getenv("DATASET_PATH")
 data_dir = pathlib.Path(DATASET_PATH)
-MODEL_PATH = "./models/dungeon_model.keras"
+MODEL_PATH = "models/dungeon_model_ab_og.keras"
 
 # Check for argument
 if len(sys.argv) < 2:
@@ -36,7 +36,7 @@ class_names = sorted([p.name for p in data_dir.iterdir() if p.is_dir()])
 # Preprocess image
 def load_image_for_model(path):
     try:
-        img = Image.open(path).convert("RGB")
+        img = Image.open(path).convert("RGBA")
         img = img.resize((32, 32))
         img_array = np.array(img, dtype=np.float32)
         return tf.expand_dims(img_array, axis=0)
