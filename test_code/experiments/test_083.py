@@ -100,10 +100,11 @@ def data_augment(images):
     """
 
     data_augmentation_layers = [
-        layers.RandomFlip("horizontal_and_vertical"),
+        layers.RandomFlip("horizontal"),
         layers.RandomContrast(0.05),
+        layers.RandomTranslation(height_factor=0.1, width_factor=0.1),
         layers.RandomBrightness(0.05),
-        layers.RandomZoom(0.1)
+        layers.RandomZoom(0.05)
     ]
 
     for layer in data_augmentation_layers:
@@ -122,31 +123,31 @@ def build_model(num_classes):
     x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.MaxPooling2D((2,2))(x)
-    x = layers.SpatialDropout2D(0.1)(x)
+    x = layers.SpatialDropout2D(0.2)(x)
 
     x = layers.Conv2D(64, (3, 3), padding="same", kernel_initializer="he_normal")(x)
     x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.MaxPooling2D((2,2))(x)
-    x = layers.SpatialDropout2D(0.1)(x)
+    x = layers.SpatialDropout2D(0.2)(x)
 
     x = layers.Conv2D(128, (3, 3), padding="same", kernel_initializer="he_normal")(x)
     x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.MaxPooling2D((2,2))(x) 
-    x = layers.SpatialDropout2D(0.1)(x)
+    x = layers.SpatialDropout2D(0.2)(x)
 
     x = layers.Conv2D(256, (3, 3), padding="same", kernel_initializer="he_normal")(x)
     x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU(negative_slope=0.1)(x)
-    x = layers.SpatialDropout2D(0.1)(x)
+    x = layers.SpatialDropout2D(0.2)(x)
 
-    x = layers.GlobalAveragePooling2D()(x)
-    #x = layers.Flatten()(x)
+    #x = layers.GlobalAveragePooling2D()(x)
+    x = layers.Flatten()(x)
 
-    x = layers.Dense(128, kernel_initializer="he_normal")(x)
+    x = layers.Dense(512, kernel_initializer="he_normal", kernel_regularizer=keras.regularizers.l2(0.0005))(x)
     x = layers.LeakyReLU(negative_slope=0.1)(x)
-    x = layers.Dropout(0.3)(x) 
+    x = layers.Dropout(0.5)(x) 
 
     outputs = layers.Dense(num_classes, activation="softmax")(x)
     
@@ -222,21 +223,3 @@ if __name__ == "__main__":
     )
 
     print(f"Done training.")
-
-
-    
-
-
-
-    
-
-
-
-
-
-
-
-    
-    
-
-

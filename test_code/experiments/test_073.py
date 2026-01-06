@@ -1,0 +1,168 @@
+import os
+import numpy as np
+import keras
+from keras import layers
+from keras.callbacks import EarlyStopping
+from sklearn.utils import class_weight
+import tensorflow as tf
+from dotenv import load_dotenv
+from PIL import Image
+import pathlib
+import datetime
+
+def clean_images(DATASET_PATH):
+    """
+    Removes the ICC profile and all other not relevant metadata from the images.
+    """
+    DATASET_PATH = pathlib.Path(DATASET_PATH)
+
+    for img_path in DATASET_PATH.rglob("*.png"):
+        img = Image.open(img_path)
+        img = img.convert("RGBA")
+        img.save(img_path, icc_profile=None)
+
+def data_augment(images):
+    """
+    Returns the sequential data augmentation images made for pixel art.
+    """
+
+    data_augmentation_layers = [
+        layers.RandomFlip("horizontal_and_vertical"),
+        layers.RandomContrast(0.05),
+        layers.RandomBrightness(0.05),
+        layers.RandomZoom(0.1)
+    ]
+
+    for layer in data_augmentation_layers:
+        images = layer(images)
+    return images
+
+def build_model(num_classes):
+    """
+    """
+
+    inputs = keras.Input(shape=(32, 32, 4))
+    x = data_augment(inputs)
+    x = layers.Rescaling(1./255)(x)
+
+    x = layers.Conv2D(32, (3, 3), padding="same", kernel_initializer="he_normal")(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU(negative_slope=0.1)(x)
+    x = layers.MaxPooling2D((2,2))(x)
+    x = layers.SpatialDropout2D(0.1)(x)
+
+    x = layers.Conv2D(64, (3, 3), padding="same", kernel_initializer="he_normal")(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU(negative_slope=0.1)(x)
+    x = layers.MaxPooling2D((2,2))(x)
+    x = layers.SpatialDropout2D(0.1)(x)
+
+    x = layers.Conv2D(128, (3, 3), padding="same", kernel_initializer="he_normal")(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU(negative_slope=0.1)(x)
+    x = layers.MaxPooling2D((2,2))(x) 
+    x = layers.SpatialDropout2D(0.1)(x)
+
+    x = layers.Conv2D(256, (3, 3), padding="same", kernel_initializer="he_normal")(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU(negative_slope=0.1)(x)
+    x = layers.SpatialDropout2D(0.1)(x)
+
+    x = layers.GlobalAveragePooling2D()(x)
+
+    x = layers.Dense(128, kernel_initializer="he_normal")(x)
+    x = layers.LeakyReLU(negative_slope=0.1)(x)
+    x = layers.Dropout(0.3)(x) 
+
+    outputs = layers.Dense(num_classes, activation="softmax")(x)
+    
+    model = keras.Model(
+        inputs = inputs,
+        outputs = outputs,
+        name = "dungeon_archivist_classifier"
+    )
+
+    return model
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    URL = os.getenv("DATASET_LINK")
+    DATASET_PATH = os.getenv("DATASET_PATH") #download_flatten_clean(URL, "./")
+    BATCH_SIZE = 32
+    LOG_DIR = f"logs/test/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    EPOCHS = 100
+
+    clean_images(DATASET_PATH)
+
+    train_ds, val_ds = keras.utils.image_dataset_from_directory(
+        DATASET_PATH,
+        validation_split=0.2,
+        subset="both",
+        seed=42,
+        image_size=(32,32),
+        batch_size=BATCH_SIZE,
+        color_mode="rgba"
+    )
+
+    class_names = train_ds.class_names
+    num_classes = len(class_names)
+
+    model = build_model(num_classes)
+    model.compile(
+        optimizer="adam",
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"]
+    )
+
+    callbacks = [
+        tf.keras.callbacks.TensorBoard(log_dir=LOG_DIR, histogram_freq=1),
+        keras.callbacks.ReduceLROnPlateau(
+            monitor="val_loss", 
+            factor=0.2, 
+            patience=3, 
+            min_lr=1e-6
+        ),
+        keras.callbacks.EarlyStopping(
+            monitor="val_loss",
+            patience=10, # Stop if no improvement for 15 epochs
+            restore_best_weights=True
+        )
+    ]
+
+    y_train = np.concatenate([y for x, y in train_ds], axis=0)
+    weights = class_weight.compute_class_weight(
+        class_weight='balanced',
+        classes=np.unique(y_train),
+        y=y_train
+    )
+    class_weight_dict = dict(enumerate(weights))
+
+    model.fit(
+        train_ds,
+        validation_data=val_ds,
+        epochs=EPOCHS,
+        batch_size=BATCH_SIZE,
+        class_weight=class_weight_dict,
+        callbacks=callbacks
+    )
+
+    print(f"Done training.")
+
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+    
+    
+
+

@@ -5,83 +5,10 @@ from keras import layers
 from keras.callbacks import EarlyStopping
 from sklearn.utils import class_weight
 import tensorflow as tf
-# import requests
-# import zipfile
-# import shutil
-# from pathlib import Path
 from dotenv import load_dotenv
 from PIL import Image
 import pathlib
 import datetime
-# from glob import glob
-
-# def download_flatten_clean(url, workspace_dir="./"):
-#     """
-#     Downloads the .zip file dataset from the given url and then prepares it for processing.
-#     It takes all the recursive sub-directories and flattens them out into the top directory only.
-#     This makes it easier for us to process later.
-
-#     Each sub-directory is separated by a '|', since '-' is used by some of the sub-directory names. 
-#     """
-
-#     workspace = Path(workspace_dir)
-#     workspace.mkdir(parents=True, exist_ok=True)
-#     zip_filename = url.split("/")[-1] or "downloaded_file.zip"
-#     zip_path = workspace / zip_filename
-#     raw_extract_path = workspace / "extract"
-#     flattened_path = workspace / "training_data"
-
-#     # Download Check
-#     if zip_path.exists():
-#         print(f"Zip file '{zip_filename}' already exists. Skipping download.")
-#     else:
-#         print(f"Downloading {url}...")
-#         try:
-#             response = requests.get(url, stream=True)
-#             response.raise_for_status()
-#             with open(zip_path, "wb") as f:
-#                 for chunk in response.iter_content(chunk_size=8192):
-#                     f.write(chunk)
-#         except Exception as e:
-#             print(f"Download failed: {e}")
-#             return
-
-#     # Extraction Check
-#     if not raw_extract_path.exists():
-#         print("Extracting zip file...")
-#         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-#             zip_ref.extractall(raw_extract_path)
-
-#     # Create Flattened Structure
-#     if not flattened_path.exists():
-#         flattened_path.mkdir(exist_ok=True)
-#         print("Flattening folders and renaming...")
-        
-#         for path in raw_extract_path.rglob('*'):
-#             if path.is_dir():
-#                 relative_parts = path.relative_to(raw_extract_path).parts
-#                 if len(relative_parts) <= 1:
-#                     continue
-                
-#                 # Creating the new flattened folder, subcategories separated by |
-#                 new_folder_name = "|".join(relative_parts[1:])
-#                 target_dir = flattened_path / new_folder_name
-#                 shutil.copytree(path, target_dir, dirs_exist_ok=True)
-
-#         # Cleanup Subdirectories within the Flattened Folder
-#         print("Cleaning up nested subdirectories in the flattened results...")
-#         for folder in flattened_path.iterdir():
-#             if folder.is_dir():
-#                 # Look for any sub-folders inside 
-#                 for subpath in list(folder.rglob('*')):
-#                     if subpath.is_dir():
-#                         shutil.rmtree(subpath)
-        
-#         print("Processing complete. Ready for training.")
-#     else:
-#         print(f"Flattened folder already exists.")
-    
-#     return flattened_path
 
 def clean_images(DATASET_PATH):
     """
@@ -91,7 +18,7 @@ def clean_images(DATASET_PATH):
 
     for img_path in DATASET_PATH.rglob("*.png"):
         img = Image.open(img_path)
-        img = img.convert("RGB")
+        img = img.convert("RGBA")
         img.save(img_path, icc_profile=None)
 
 def data_augment(images):
@@ -104,7 +31,7 @@ def data_augment(images):
         layers.RandomContrast(0.05),
         layers.RandomTranslation(height_factor=0.1, width_factor=0.1),
         layers.RandomBrightness(0.05),
-        layers.RandomZoom(0.05)
+        layers.RandomZoom(0.05),
     ]
 
     for layer in data_augmentation_layers:
@@ -112,10 +39,8 @@ def data_augment(images):
     return images
 
 def build_model(num_classes):
-    """
-    """
 
-    inputs = keras.Input(shape=(32, 32, 3))
+    inputs = keras.Input(shape=(32, 32, 4))
     x = data_augment(inputs)
     x = layers.Rescaling(1./255)(x)
 
@@ -142,16 +67,13 @@ def build_model(num_classes):
     x = layers.LeakyReLU(negative_slope=0.1)(x)
     x = layers.SpatialDropout2D(0.2)(x)
 
-    x = layers.GlobalAveragePooling2D()(x)
-    #x = layers.Flatten()(x)
+    x = layers.Flatten()(x)
 
     x = layers.Dense(512, kernel_initializer="he_normal", kernel_regularizer=keras.regularizers.l2(0.0005))(x)
-    x = layers.LeakyReLU(negative_slope=0.1)(x)
+    x = layers.LeakyReLU(negative_slope=0.1, name="embeddings")(x)
     x = layers.Dropout(0.5)(x) 
 
-    # Embedding layer for similarity search
-    embedding = layers.Dense(128, activation=None, name="embedding")(x)
-    outputs = layers.Dense(num_classes, activation="softmax")(embedding)
+    outputs = layers.Dense(num_classes, activation="softmax")(x)
     
     model = keras.Model(
         inputs = inputs,
@@ -165,7 +87,7 @@ def build_model(num_classes):
 if __name__ == "__main__":
     load_dotenv()
     URL = os.getenv("DATASET_LINK")
-    DATASET_PATH = os.getenv("DATASET_PATH") #download_flatten_clean(URL, "./")
+    DATASET_PATH = os.getenv("DATASET_PATH")
     BATCH_SIZE = 32
     LOG_DIR = f"logs/test/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     EPOCHS = 100
@@ -177,15 +99,16 @@ if __name__ == "__main__":
         validation_split=0.2,
         subset="both",
         seed=42,
+        color_mode="rgba",
         image_size=(32,32),
         batch_size=BATCH_SIZE,
-        color_mode="rgb",
-        labels="inferred", #uses folder names
-        label_mode="int"  # integer labels
+        labels="inferred", 
+        label_mode="int"  
     )
 
     class_names = train_ds.class_names
     num_classes = len(class_names)
+
     model = build_model(num_classes)
     model.compile(
         optimizer="adam",
@@ -203,7 +126,7 @@ if __name__ == "__main__":
         ),
         keras.callbacks.EarlyStopping(
             monitor="val_loss",
-            patience=10, # Stop if no improvement for 15 epochs
+            patience=10, 
             restore_best_weights=True
         )
     ]
@@ -226,9 +149,27 @@ if __name__ == "__main__":
     )
 
     MODEL_DIR = "./models/"
-    MODEL_NAME = "dungeon_model.keras"
+    MODEL_NAME = "dungeon_model_og.keras"
 
     os.makedirs(MODEL_DIR, exist_ok=True)
     model.save(os.path.join(MODEL_DIR, MODEL_NAME))
 
     print(f"Training complete and Model saved to {os.path.join(MODEL_DIR, MODEL_NAME)}")
+
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+    
+    
+
+

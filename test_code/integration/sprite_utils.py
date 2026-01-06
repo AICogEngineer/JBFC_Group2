@@ -15,13 +15,13 @@ def load_model(model_path):
     model = tf.keras.models.load_model(model_path)
     embedding_model = tf.keras.Model(
         inputs=model.inputs,
-        outputs=model.get_layer("embedding").output
+        outputs=model.get_layer("embeddings").output
     )
     return model, embedding_model
 
 #Return flattened embedding vector for a single image
 def get_embedding_from_file(path, embedding_model):
-    img = Image.open(path).convert("RGB")
+    img = Image.open(path).convert("RGBA")
     img = img.resize((IMG_HEIGHT, IMG_WIDTH))
     img = np.array(img)
     img = tf.expand_dims(img, axis=0)
